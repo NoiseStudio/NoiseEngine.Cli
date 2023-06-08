@@ -13,15 +13,10 @@ public class HelpConsoleCommand : IConsoleCommand {
     }
 
     public string Name => "help";
-
-    public string[] Aliases { get; } = { "?" };
-
+    public string[] Aliases { get; } = Array.Empty<string>();
     public string Description => "Displays help information about the console commands.";
-
-    public string Usage => $"{ConsoleCommandUtils.ExeName} help [command]";
-
+    public string Usage => $"{ConsoleCommandUtils.ExeName} help [COMMAND]";
     public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
-
     public string? LongDescription => null;
 
     public void Execute(ReadOnlySpan<string> args) {
@@ -31,7 +26,7 @@ public class HelpConsoleCommand : IConsoleCommand {
                 Console.WriteLine();
                 Console.WriteLine($"Usage: `{Usage}`");
                 return;
-            case 1: {
+            case 1:
                 string commandName = args[0];
                 IConsoleCommand? command =
                     consoleCommands.FirstOrDefault(c => c.Name == commandName || c.Aliases.Contains(commandName));
@@ -63,7 +58,6 @@ public class HelpConsoleCommand : IConsoleCommand {
 
                 Console.WriteLine(ConsoleCommandUtils.Indent(ConsoleCommandUtils.Align(optionDescriptionPairs)));
                 return;
-            }
         }
 
         Console.WriteLine("List of commands:");

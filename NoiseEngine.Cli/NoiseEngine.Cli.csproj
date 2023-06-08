@@ -16,4 +16,10 @@
         <FileVersion>0.1.0.0</FileVersion>
     </PropertyGroup>
 
+    <ItemGroup>
+        <None Update="settings.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
 </Project>

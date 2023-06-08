@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using NoiseEngine.Cli;
 
 string exeName = ConsoleCommandUtils.ExeName;
 
-List<IConsoleCommand> commands = new List<IConsoleCommand>();
+Settings settings = GetSettings();
+
+List<IConsoleCommand> commands = new List<IConsoleCommand> {
+    new InstallConsoleCommand(settings)
+};
 
 // Help being in the collection passed as an argument to the constructor is intentional.
 commands.Add(new HelpConsoleCommand(commands));
@@ -13,15 +19,12 @@ commands.Add(new HelpConsoleCommand(commands));
 if (args.Length == 0) {
     ConsoleCommandUtils.WriteLineError("No command specified.");
     Console.WriteLine();
-    Console.WriteLine($"Usage: `{exeName} <command>`");
+    Console.WriteLine($"Usage: `{exeName} <COMMAND>`");
     Console.WriteLine($"Use `{exeName} help` for a list of commands.");
     return;
 }
 
 string commandName = args[0];
-
-if (commandName is "--help" or "-help" or "?")
-    commandName = "help";
 
 IConsoleCommand? command = commands.FirstOrDefault(c => c.Name == commandName || c.Aliases.Contains(commandName));
 
@@ -32,3 +35,14 @@ if (command == null) {
 }
 
 command.Execute(args.AsSpan()[1..]);
+
+Settings GetSettings() {
+    if (!File.Exists("./settings.json")) {
+        ConsoleCommandUtils.WriteLineWarning("Settings file not found; using default settings.");
+        JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
+        File.WriteAllBytes("./settings.json", JsonSerializer.SerializeToUtf8Bytes(new Settings(), options));
+    }
+
+    Settings? result = JsonSerializer.Deserialize<Settings>(File.ReadAllBytes("./settings.json"));
+    return result ?? throw new Exception("Could not deserialize settings.");
+}

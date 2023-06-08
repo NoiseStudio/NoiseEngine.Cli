@@ -7,6 +7,13 @@ public static class ConsoleCommandUtils {
 
     public static string ExeName { get; } = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
 
+    public static void WriteLineWarning(string message) {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.Write("Warning: ");
+        Console.ResetColor();
+        Console.WriteLine(message);
+    }
+
     public static void WriteLineError(string message) {
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Write("Error: ");
