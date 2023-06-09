@@ -1,4 +1,4 @@
 {
-    "InstallUrl": "127.0.0.1",
+    "InstallUrl": "http://localhost:8080/",
     "InstallDirectory": "./versions"
 }

@@ -15,6 +15,6 @@ public interface IConsoleCommand {
 
     string NameAliasList => string.Join(", ", new[] { Name }.Concat(Aliases));
 
-    void Execute(ReadOnlySpan<string> args);
+    bool Execute(ReadOnlySpan<string> args);
 
 }

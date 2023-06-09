@@ -21,6 +21,11 @@ public static class ConsoleCommandUtils {
         Console.WriteLine(message);
     }
 
+    public static void UpdateProgressBar(long current, long total, int width = 20) {
+        int progress = (int)Math.Round((double)current / total * width);
+        Console.Write($"\r[{new string('#', progress).PadRight(width)}] {current}/{total}");
+    }
+
     public static string Indent(string s, int level = 1) {
         string indent = new string(' ', level * 2);
         return indent + s.Replace("\n", "\n" + indent);

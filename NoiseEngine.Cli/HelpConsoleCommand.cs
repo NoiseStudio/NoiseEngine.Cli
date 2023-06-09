@@ -15,17 +15,17 @@ public class HelpConsoleCommand : IConsoleCommand {
     public string Name => "help";
     public string[] Aliases { get; } = Array.Empty<string>();
     public string Description => "Displays help information about the console commands.";
-    public string Usage => $"{ConsoleCommandUtils.ExeName} help [COMMAND]";
+    public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} [COMMAND]";
     public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
     public string? LongDescription => null;
 
-    public void Execute(ReadOnlySpan<string> args) {
+    public bool Execute(ReadOnlySpan<string> args) {
         switch (args.Length) {
             case > 1:
                 ConsoleCommandUtils.WriteLineError("Too many arguments.");
                 Console.WriteLine();
                 Console.WriteLine($"Usage: `{Usage}`");
-                return;
+                return false;
             case 1:
                 string commandName = args[0];
                 IConsoleCommand? command =
@@ -33,7 +33,7 @@ public class HelpConsoleCommand : IConsoleCommand {
 
                 if (command == null) {
                     ConsoleCommandUtils.WriteLineError($"Command `{commandName}` not found.");
-                    return;
+                    return false;
                 }
 
                 Console.WriteLine($"{command.NameAliasList} - {command.Description}");
@@ -47,7 +47,7 @@ public class HelpConsoleCommand : IConsoleCommand {
                 }
 
                 if (command.Options.Length <= 0)
-                    return;
+                    return true;
 
                 Console.WriteLine();
                 Console.WriteLine("Options:");
@@ -57,7 +57,7 @@ public class HelpConsoleCommand : IConsoleCommand {
                     .ToArray();
 
                 Console.WriteLine(ConsoleCommandUtils.Indent(ConsoleCommandUtils.Align(optionDescriptionPairs)));
-                return;
+                return true;
         }
 
         Console.WriteLine("List of commands:");
@@ -70,6 +70,7 @@ public class HelpConsoleCommand : IConsoleCommand {
 
         string list = ConsoleCommandUtils.Align(aliasDescriptionPairs);
         Console.WriteLine(ConsoleCommandUtils.Indent(list));
+        return true;
     }
 
 }

@@ -1,6 +1,11 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace NoiseEngine.Cli;
 
@@ -13,8 +18,8 @@ public class InstallConsoleCommand : IConsoleCommand {
     public string Description => "Installing and displaying information about NoiseEngine versions.";
 
     public string Usage =>
-        $"{ConsoleCommandUtils.ExeName} install <VERSION> [options] | " +
-        $"{ConsoleCommandUtils.ExeName} install <list|available|l|a>";
+        $"{ConsoleCommandUtils.ExeName} {Name} <VERSION|latest> [options] | " +
+        $"{ConsoleCommandUtils.ExeName} {Name} <list|available|l|a>";
 
     public ConsoleCommandOption[] Options { get; } = {
         new ConsoleCommandOption(
@@ -23,20 +28,18 @@ public class InstallConsoleCommand : IConsoleCommand {
     };
 
     public string LongDescription =>
-        $"Use `{ConsoleCommandUtils.ExeName} install <VERSION>` to install a version of NoiseEngine.\n" +
-        $"Use `{ConsoleCommandUtils.ExeName} install <list|l>` to list installed versions.\n" +
-        $"Use `{ConsoleCommandUtils.ExeName} install <available|a>` to list available versions.\n";
+        $"Use `{ConsoleCommandUtils.ExeName} {Name} <VERSION|latest>` to install a version of NoiseEngine.\n" +
+        $"Use `{ConsoleCommandUtils.ExeName} {Name} <list|l>` to list installed versions.\n" +
+        $"Use `{ConsoleCommandUtils.ExeName} {Name} <available|a>` to list available versions.\n";
 
     public InstallConsoleCommand(Settings settings) {
         this.settings = settings;
     }
 
-    public void Execute(ReadOnlySpan<string> args) {
+    public bool Execute(ReadOnlySpan<string> args) {
         if (args.Length is 0 or > 2) {
-            ConsoleCommandUtils.WriteLineError("Invalid usage.");
-            Console.WriteLine();
-            Console.WriteLine($"Usage: `{Usage}`");
-            return;
+            InvalidUsageMessage("Invalid usage.");
+            return false;
         }
 
         string version = args[0];
@@ -45,37 +48,132 @@ public class InstallConsoleCommand : IConsoleCommand {
             case "list":
             case "l":
                 if (args.Length > 1) {
-                    ConsoleCommandUtils.WriteLineError("Too many arguments.");
-                    Console.WriteLine();
-                    Console.WriteLine($"Usage: `{Usage}`");
-                    return;
+                    InvalidUsageMessage("Too many arguments.");
+                    return false;
                 }
 
                 ListInstalledVersions();
-                return;
+                return true;
             case "available":
             case "a":
                 if (args.Length > 1) {
-                    ConsoleCommandUtils.WriteLineError("Too many arguments.");
-                    Console.WriteLine();
-                    Console.WriteLine($"Usage: `{Usage}`");
-                    return;
+                    InvalidUsageMessage("Too many arguments.");
+                    return false;
                 }
 
-                ListAvailableVersions();
-                return;
+                return ListAvailableVersions();
             default:
-                InstallVersion(version, args.Contains("--force") || args.Contains("-f"));
-                break;
+                if (args.Length == 1) {
+                    return InstallVersion(version, false);
+                }
+
+                if (args.Contains("--force") || args.Contains("-f"))
+                    return InstallVersion(version, true);
+
+                InvalidUsageMessage($"Invalid argument: `{args[1]}.");
+                return false;
         }
     }
 
-    private void InstallVersion(string version, bool force) {
-        throw new NotImplementedException();
+    private void InvalidUsageMessage(string error) {
+        ConsoleCommandUtils.WriteLineError(error);
+        Console.WriteLine();
+        Console.WriteLine($"Usage: `{Usage}`");
     }
 
-    private void ListAvailableVersions() {
-        throw new NotImplementedException();
+    private bool InstallVersion(string version, bool force) {
+        string[] installed = GetInstalledVersions();
+        InstallIndex? index = GetInstallIndex().Result;
+
+        if (index is null) {
+            ConsoleCommandUtils.WriteLineError("Could not deserialize index.");
+            return false;
+        }
+
+        if (version == "latest") {
+            version = index.Latest;
+        }
+
+        if (!force && installed.Contains(version)){
+            ConsoleCommandUtils.WriteLineError($"Version `{version}` is already installed.");
+            return false;
+        }
+
+        if (!index.Versions.Contains(version)) {
+            ConsoleCommandUtils.WriteLineError($"Version `{version}` not found.");
+            return false;
+        }
+
+        string root = settings.InstallDirectory;
+
+        if (!Path.IsPathRooted(root)) {
+            root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, root);
+        }
+
+        if (!Directory.Exists(root)) {
+            Directory.CreateDirectory(root);
+        }
+
+        string path = root;
+
+        path = Path.Combine(path, version);
+        path += ".zip";
+
+        if (File.Exists(path)) {
+            File.Delete(path);
+        }
+
+        string? result = DownloadFile(version + ".zip", path).Result;
+
+        if (result is null) {
+            ConsoleCommandUtils.WriteLineError($"Could not download version `{version}`.");
+            return false;
+        }
+
+        Console.WriteLine($"Downloaded version `{version}.zip`.");
+        Console.WriteLine("Unpacking...");
+
+        try {
+            ZipFile.ExtractToDirectory(path, root);
+        } catch (Exception e) {
+            ConsoleCommandUtils.WriteLineError($"Could not unpack version `{version}`.");
+            Console.WriteLine(e);
+            return false;
+        }
+
+        Console.WriteLine($"Unpacked version `{version}`.");
+        File.Delete(path);
+
+        return true;
+    }
+
+    private bool ListAvailableVersions() {
+        InstallIndex? index = GetInstallIndex().Result;
+
+        if (index is null) {
+            ConsoleCommandUtils.WriteLineError("Could not deserialize index.");
+            return false;
+        }
+
+        string[] installed = GetInstalledVersions();
+
+        Console.WriteLine("Available versions:");
+
+        foreach (string version in index.Versions) {
+            string line = $"{version}";
+
+            if (version == index.Latest) {
+                line += " (latest)";
+            }
+
+            if (installed.Contains(version)) {
+                line += " (installed)";
+            }
+
+            Console.WriteLine(ConsoleCommandUtils.Indent(line));
+        }
+
+        return true;
     }
 
     private void ListInstalledVersions() {
@@ -103,6 +201,64 @@ public class InstallConsoleCommand : IConsoleCommand {
         return Directory.GetDirectories(path)
             .Select(Path.GetFileName)
             .ToArray()!;
+    }
+
+    private async Task<InstallIndex?> GetInstallIndex() {
+        string? result = await DownloadFile("index.json");
+
+        if (result is null) {
+            return null;
+        }
+
+        byte[] data = await File.ReadAllBytesAsync(result);
+        File.Delete(result);
+        return JsonSerializer.Deserialize<InstallIndex>(data);
+    }
+
+    /// <summary>
+    /// Returns path to the temporary file. Null if could not download.
+    /// </summary>
+    private async Task<string?> DownloadFile(string name, string? path = null) {
+        Console.WriteLine($"Downloading file `{name}`...");
+        using HttpClient client = new HttpClient();
+        Uri uri = new Uri(settings.InstallUrl + name);
+        using HttpResponseMessage response = await client.GetAsync(uri);
+
+        if (response.StatusCode != HttpStatusCode.OK) {
+            ConsoleCommandUtils.WriteLineError(
+                $"Could not access file at `{uri}`. Status code: `{(int)response.StatusCode} {response.StatusCode}`.");
+            return null;
+        }
+
+        if (response.Content.Headers.ContentLength is null) {
+            ConsoleCommandUtils.WriteLineWarning("Could not determine file size. This is likely a bug on the server.");
+        }
+
+        path ??= Path.GetTempFileName();
+        await using FileStream file = File.Create(path);
+        await using Stream stream = await response.Content.ReadAsStreamAsync();
+
+        byte[] buffer = new byte[4096];
+        int read;
+        int totalRead = 0;
+
+        while ((read = await stream.ReadAsync(buffer)) > 0) {
+            await file.WriteAsync(buffer.AsMemory(0, read));
+            totalRead += read;
+
+            if (response.Content.Headers.ContentLength is null)
+                continue;
+
+            ConsoleCommandUtils.UpdateProgressBar(totalRead, response.Content.Headers.ContentLength.Value);
+            Console.Write(" bytes"); // TODO: this should not be bytes
+        }
+
+        if (response.Content.Headers.ContentLength is not null) {
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        return path;
     }
 
 }

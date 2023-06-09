@@ -21,7 +21,7 @@ if (args.Length == 0) {
     Console.WriteLine();
     Console.WriteLine($"Usage: `{exeName} <COMMAND>`");
     Console.WriteLine($"Use `{exeName} help` for a list of commands.");
-    return;
+    return -1;
 }
 
 string commandName = args[0];
@@ -31,10 +31,15 @@ IConsoleCommand? command = commands.FirstOrDefault(c => c.Name == commandName ||
 if (command == null) {
     ConsoleCommandUtils.WriteLineError($"Command `{commandName}` not found.");
     Console.WriteLine($"Use `{exeName} help` for a list of commands.");
-    return;
+    return -1;
 }
 
-command.Execute(args.AsSpan()[1..]);
+if (!command.Execute(args.AsSpan()[1..])) {
+    // return with exit code
+    return -1;
+}
+
+return 0;
 
 Settings GetSettings() {
     if (!File.Exists("./settings.json")) {
