@@ -133,6 +133,10 @@ public class InstallConsoleCommand : IConsoleCommand {
         Console.WriteLine($"Downloaded version `{version}.zip`.");
         Console.WriteLine("Unpacking...");
 
+        if (Directory.Exists(Path.Combine(root, version))) {
+            Directory.Delete(Path.Combine(root, version), true);
+        }
+
         try {
             ZipFile.ExtractToDirectory(path, root);
         } catch (Exception e) {
@@ -240,17 +244,26 @@ public class InstallConsoleCommand : IConsoleCommand {
 
         byte[] buffer = new byte[4096];
         int read;
-        int totalRead = 0;
+        long? total = response.Content.Headers.ContentLength;
+        long totalRead = 0;
 
         while ((read = await stream.ReadAsync(buffer)) > 0) {
             await file.WriteAsync(buffer.AsMemory(0, read));
             totalRead += read;
 
-            if (response.Content.Headers.ContentLength is null)
+            if (total is null)
                 continue;
 
-            ConsoleCommandUtils.UpdateProgressBar(totalRead, response.Content.Headers.ContentLength.Value);
-            Console.Write(" bytes"); // TODO: this should not be bytes
+            if (total < 1024) {
+                ConsoleCommandUtils.UpdateProgressBar(totalRead, total.Value);
+                Console.Write($" {totalRead}/{total} bytes");
+            } else if (total < 1024 * 1024) {
+                ConsoleCommandUtils.UpdateProgressBar(totalRead, total.Value);
+                Console.Write($" {totalRead / 1024:F2}/{total / 1024:F2} KiB");
+            } else {
+                ConsoleCommandUtils.UpdateProgressBar(totalRead, total.Value);
+                Console.Write($" {totalRead / 1024 / 1024:F2}/{total / 1024 / 1024:F2} MiB");
+            }
         }
 
         if (response.Content.Headers.ContentLength is not null) {

@@ -1,6 +1,6 @@
 namespace NoiseEngine.Cli;
 
 public record Settings(
-    string InstallUrl = "http://localhost:8080/",
+    string[] InstallUrls = new string[] {"http://localhost:8080/"},
     string InstallDirectory = "./versions"
 );

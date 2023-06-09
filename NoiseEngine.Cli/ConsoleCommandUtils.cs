@@ -21,9 +21,9 @@ public static class ConsoleCommandUtils {
         Console.WriteLine(message);
     }
 
-    public static void UpdateProgressBar(long current, long total, int width = 20) {
-        int progress = (int)Math.Round((double)current / total * width);
-        Console.Write($"\r[{new string('#', progress).PadRight(width)}] {current}/{total}");
+    public static void UpdateProgressBar(double current, double total, int width = 20) {
+        int progress = (int)Math.Round(current / total * width);
+        Console.Write($"\r[{new string('#', progress).PadRight(width)}]");
     }
 
     public static string Indent(string s, int level = 1) {
