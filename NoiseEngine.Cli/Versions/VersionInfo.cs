@@ -1,6 +1,6 @@
 namespace NoiseEngine.Cli.Versions;
 
-public record VersionIndexVersion(
+public record VersionInfo(
     string Version,
-    bool Prerelease
+    bool PreRelease
 );
