@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NoiseEngine.Cli;
 using NoiseEngine.Cli.Versions;
@@ -17,7 +18,10 @@ public class InstallConsoleCommand : IConsoleCommand {
     public ConsoleCommandOption[] Options { get; } = {
         new ConsoleCommandOption(
             new string[] { "--force", "-f" },
-            "Forces the installation of the specified version, even if it is already installed.")
+            "Forces the installation of the specified version, even if it is already installed."),
+        new ConsoleCommandOption(
+            new string[] { "--platform <PLATFORM>" },
+            $"Forces installer to download engine for specified platform. List with `{ConsoleCommandUtils.ExeName} platforms`.")
     };
 
     public string LongDescription =>
@@ -29,21 +33,54 @@ public class InstallConsoleCommand : IConsoleCommand {
     }
 
     public bool Execute(ReadOnlySpan<string> args) {
-        if (args.Length is 0 or > 2) {
-            InvalidUsageMessage("Invalid usage.");
-            return false;
+        bool force = false;
+        Platform? platform = null;
+
+        for (int i = 1; i < args.Length; i++) {
+            string arg = args[i];
+
+            if (arg is "--force" or "-f") {
+                if (force) {
+                    InvalidUsageMessage("Multiple --force options.");
+                    return false;
+                }
+
+                force = true;
+            } else if (arg == "--platform") {
+                if (platform is not null) {
+                    InvalidUsageMessage("Multiple --platform options.");
+                    return false;
+                }
+
+                if (args.Length <= i + 1) {
+                    InvalidUsageMessage("Trailing --platform option.");
+                    return false;
+                }
+
+                string platformString = args[i + 1];
+
+                if (!Enum.TryParse(platformString, out Platform platformNotNullable)) {
+                    InvalidUsageMessage(
+                        $"Invalid platform: `{platformString}. List with `{ConsoleCommandUtils.ExeName} platforms`.");
+                    return false;
+                }
+
+                platform = platformNotNullable;
+            }
         }
 
-        if (args.Length == 1) {
-            return InstallVersion(args[0], false);
+        if (platform is null) {
+            if (OperatingSystem.IsWindows()) {
+                platform = Platform.WindowsAmd64;
+            } else if (OperatingSystem.IsLinux()) {
+                platform = Platform.LinuxAmd64;
+            } else {
+                ConsoleCommandUtils.WriteLineError("Could not determine OS. Try using --platform option.");
+                return false;
+            }
         }
 
-        if (args[0] != "--force" && args[0] != "-f") {
-            InvalidUsageMessage("Invalid usage.");
-            return false;
-        }
-
-        return InstallVersion(args[1], true).Result;
+        return InstallVersion(args[0], force, platform.Value).Result;
     }
 
     private void InvalidUsageMessage(string error) {
@@ -52,7 +89,7 @@ public class InstallConsoleCommand : IConsoleCommand {
          Console.WriteLine($"Usage: `{Usage}`");
      }
 
-    private async Task<bool> InstallVersion(string version, bool force) {
+    private async Task<bool> InstallVersion(string version, bool force, Platform platform) {
         VersionIndex? index = await VersionUtils.DownloadIndex(settings);
 
         if (index is null) {
@@ -83,7 +120,7 @@ public class InstallConsoleCommand : IConsoleCommand {
 
         Console.WriteLine($"Installing version `{vi.Version}`...");
 
-        string zipFile = await ConsoleCommandUtils.TryDownloadFile(new Uri(details.));
+        string zipFile = await ConsoleCommandUtils.TryDownloadFile(new Uri(details));
     }
 
 }
