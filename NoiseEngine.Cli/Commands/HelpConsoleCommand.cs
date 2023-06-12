@@ -22,9 +22,7 @@ public class HelpConsoleCommand : IConsoleCommand {
     public bool Execute(ReadOnlySpan<string> args) {
         switch (args.Length) {
             case > 1:
-                ConsoleCommandUtils.WriteLineError("Too many arguments.");
-                Console.WriteLine();
-                Console.WriteLine($"Usage: `{Usage}`");
+                ConsoleCommandUtils.WriteInvalidUsage("Too many arguments.", Usage);
                 return false;
             case 1:
                 string commandName = args[0];

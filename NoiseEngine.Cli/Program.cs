@@ -39,7 +39,6 @@ if (command == null) {
 }
 
 if (!command.Execute(args.AsSpan()[1..])) {
-    // return with exit code
     return -1;
 }
 

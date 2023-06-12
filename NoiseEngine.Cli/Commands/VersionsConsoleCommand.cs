@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -38,16 +39,31 @@ public class VersionsConsoleCommand : IConsoleCommand {
         string subcommand = args[0];
 
         if (subcommand is "list" or "l") {
+            if (args.Length > 1) {
+                ConsoleCommandUtils.WriteInvalidUsage("Too many arguments.", Usage);
+                return false;
+            }
+
             return ListVersions();
         }
 
         if (subcommand is "available" or "a") {
+            if (args.Length > 1) {
+                ConsoleCommandUtils.WriteInvalidUsage("Too many arguments.", Usage);
+                return false;
+            }
+
             return AvailableVersions().Result;
         }
 
         if (subcommand is "details" or "d") {
             if (args.Length < 2) {
                 ConsoleCommandUtils.WriteInvalidUsage("Missing version argument.", Usage);
+                return false;
+            }
+
+            if (args.Length > 2) {
+                ConsoleCommandUtils.WriteInvalidUsage("Too many arguments.", Usage);
                 return false;
             }
 
@@ -86,29 +102,24 @@ public class VersionsConsoleCommand : IConsoleCommand {
         VersionIndex? index = await VersionUtils.DownloadIndex(settings);
 
         if (index is null) {
-            ConsoleCommandUtils.WriteLineError("Failed to download version index.");
             return false;
         }
 
         Console.WriteLine("Available versions:");
 
         foreach (VersionInfo version in index.Versions) {
-            string installed = string.Empty;
+            IEnumerable<Platform> installed = Enum.GetValuesAsUnderlyingType<Platform>()
+                .Cast<Platform>()
+                .Where(platform => VersionUtils.IsInstalled(settings, version.Version, platform));
 
-            foreach (object o in Enum.GetValuesAsUnderlyingType<Platform>()) {
-                Platform platform = (Platform)o;
+            string installedString = string.Join(", ", installed.Select(x => x.ToString()));
 
-                if (VersionUtils.IsInstalled(settings, version.Version, platform)) {
-                    installed += $"{platform} ";
-                }
-            }
-
-            if (installed.Length > 0) {
-                installed = $" (installed for {installed.Trim().Replace(" ", ", ")})";
+            if (installedString.Length > 0) {
+                installedString = $" (installed for {installedString})";
             }
 
             Console.WriteLine(ConsoleCommandUtils.Indent(
-                version.Version + (version.PreRelease ? $" (pre-release){installed}" : $"{installed}")));
+                version.Version + (version.PreRelease ? $" (pre-release){installedString}" : $"{installedString}")));
         }
 
         return true;
@@ -118,7 +129,6 @@ public class VersionsConsoleCommand : IConsoleCommand {
         VersionIndex? index = await VersionUtils.DownloadIndex(settings);
 
         if (index is null) {
-            ConsoleCommandUtils.WriteLineError("Failed to download version index.");
             return false;
         }
 
@@ -132,7 +142,6 @@ public class VersionsConsoleCommand : IConsoleCommand {
         VersionDetails? details = await VersionUtils.DownloadDetails(settings, version);
 
         if (details is null) {
-            ConsoleCommandUtils.WriteLineError($"Failed to download version details for `{version}`.");
             return false;
         }
 
