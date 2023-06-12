@@ -11,7 +11,8 @@ Settings settings = GetSettings();
 
 List<IConsoleCommand> commands = new List<IConsoleCommand> {
     new InstallConsoleCommand(settings),
-    new PlatformsConsoleCommand()
+    new PlatformsConsoleCommand(),
+    new VersionsConsoleCommand(settings)
 };
 
 // Help being in the collection passed as an argument to the constructor is intentional.

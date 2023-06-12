@@ -30,6 +30,12 @@ public static class ConsoleCommandUtils {
         Console.WriteLine(message);
     }
 
+    public static void WriteInvalidUsage(string message, string usage) {
+        WriteLineError(message);
+        Console.WriteLine();
+        Console.WriteLine($"Usage: `{usage}`");
+    }
+
     public static void UpdateProgressBar(double current, double total, int width = 20) {
         int progress = (int)Math.Round(current / total * width);
         Console.Write($"\r[{new string('#', progress).PadRight(width)}]");

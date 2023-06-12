@@ -37,7 +37,7 @@ public class InstallConsoleCommand : IConsoleCommand {
 
     public bool Execute(ReadOnlySpan<string> args) {
         if (args.Length < 1) {
-            InvalidUsageMessage("Missing version argument.");
+            ConsoleCommandUtils.WriteInvalidUsage("Missing version argument.", Usage);
             return false;
         }
 
@@ -49,27 +49,28 @@ public class InstallConsoleCommand : IConsoleCommand {
 
             if (arg is "--force" or "-f") {
                 if (force) {
-                    InvalidUsageMessage("Multiple --force options.");
+                    ConsoleCommandUtils.WriteInvalidUsage("Multiple --force options.", Usage);
                     return false;
                 }
 
                 force = true;
             } else if (arg == "--platform") {
                 if (platform is not null) {
-                    InvalidUsageMessage("Multiple --platform options.");
+                    ConsoleCommandUtils.WriteInvalidUsage("Multiple --platform options.", Usage);
                     return false;
                 }
 
                 if (args.Length <= i + 1) {
-                    InvalidUsageMessage("Trailing --platform option.");
+                    ConsoleCommandUtils.WriteInvalidUsage("Trailing --platform option.", Usage);
                     return false;
                 }
 
                 string platformString = args[i + 1];
 
                 if (!Enum.TryParse(platformString, out Platform platformNotNullable)) {
-                    InvalidUsageMessage(
-                        $"Invalid platform: `{platformString}. List with `{ConsoleCommandUtils.ExeName} platforms`.");
+                    ConsoleCommandUtils.WriteInvalidUsage(
+                        $"Invalid platform: `{platformString}. List with `{ConsoleCommandUtils.ExeName} platforms`.",
+                        Usage);
                     return false;
                 }
 
@@ -91,11 +92,6 @@ public class InstallConsoleCommand : IConsoleCommand {
         return InstallVersion(args[0], force, platform.Value).Result;
     }
 
-    private void InvalidUsageMessage(string error) {
-        ConsoleCommandUtils.WriteLineError(error);
-        Console.WriteLine();
-        Console.WriteLine($"Usage: `{Usage}`");
-    }
 
     private async Task<bool> InstallVersion(string version, bool force, Platform platform) {
         VersionIndex? index = await VersionUtils.DownloadIndex(settings);
