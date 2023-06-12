@@ -10,7 +10,8 @@ string exeName = ConsoleCommandUtils.ExeName;
 Settings settings = GetSettings();
 
 List<IConsoleCommand> commands = new List<IConsoleCommand> {
-    new InstallConsoleCommand(settings)
+    new InstallConsoleCommand(settings),
+    new PlatformsConsoleCommand()
 };
 
 // Help being in the collection passed as an argument to the constructor is intentional.
