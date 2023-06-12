@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NoiseEngine.Cli.Versions;
 
-namespace NoiseEngine.Cli;
+namespace NoiseEngine.Cli.Commands;
 
 public class VersionsConsoleCommand : IConsoleCommand {
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using NoiseEngine.Cli.Versions;
 
-namespace NoiseEngine.Cli;
+namespace NoiseEngine.Cli.Commands;
 
 public class UninstallConsoleCommand : IConsoleCommand {
 

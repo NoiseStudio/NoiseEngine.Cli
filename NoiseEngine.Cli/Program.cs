@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using NoiseEngine.Cli;
+using NoiseEngine.Cli.Commands;
 
 string exeName = ConsoleCommandUtils.ExeName;
 

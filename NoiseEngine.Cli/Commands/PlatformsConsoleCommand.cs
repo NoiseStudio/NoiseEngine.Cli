@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NoiseEngine.Cli;
+namespace NoiseEngine.Cli.Commands;
 
 public class PlatformsConsoleCommand : IConsoleCommand {
 

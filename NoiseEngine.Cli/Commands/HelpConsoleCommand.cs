@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NoiseEngine.Cli;
+namespace NoiseEngine.Cli.Commands;
 
 public class HelpConsoleCommand : IConsoleCommand {
 
