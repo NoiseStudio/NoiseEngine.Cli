@@ -48,6 +48,8 @@ Settings GetSettings() {
         File.WriteAllBytes("./settings.json", JsonSerializer.SerializeToUtf8Bytes(new Settings(), options));
     }
 
-    Settings? result = JsonSerializer.Deserialize<Settings>(File.ReadAllBytes("./settings.json"));
+    Settings? result = JsonSerializer.Deserialize<Settings>(
+        File.ReadAllBytes("./settings.json"),
+        ConsoleCommandUtils.JsonOptions);
     return result ?? throw new Exception("Could not deserialize settings.");
 }

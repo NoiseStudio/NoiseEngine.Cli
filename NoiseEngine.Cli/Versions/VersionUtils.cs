@@ -9,11 +9,15 @@ public static class VersionUtils {
 
     public static async Task<VersionIndex?> DownloadIndex(Settings settings) {
         foreach (string url in settings.InstallUrls) {
-            if (await ConsoleCommandUtils.TryDownloadFile(new Uri($"{url}/index.json")) is not { } indexFile) {
+            if (await ConsoleCommandUtils.TryDownloadFile(new Uri($"{url}index.json")) is not { } indexFile) {
                 continue;
             }
 
-            if (JsonSerializer.Deserialize<VersionIndex>(await File.ReadAllBytesAsync(indexFile)) is not { } index) {
+            VersionIndex? index = JsonSerializer.Deserialize<VersionIndex>(
+                await File.ReadAllBytesAsync(indexFile),
+                ConsoleCommandUtils.JsonOptions);
+
+            if (index is null) {
                 continue;
             }
 
@@ -26,14 +30,15 @@ public static class VersionUtils {
 
     public static async Task<VersionDetails?> DownloadDetails(Settings settings, string version) {
         foreach (string url in settings.InstallUrls) {
-            string? detailsFile = await ConsoleCommandUtils.TryDownloadFile(new Uri($"{url}/details/{version}.json"));
+            string? detailsFile = await ConsoleCommandUtils.TryDownloadFile(new Uri($"{url}details/{version}.json"));
 
             if (detailsFile is null) {
                 continue;
             }
 
-            VersionDetails? details =
-                JsonSerializer.Deserialize<VersionDetails>(await File.ReadAllBytesAsync(detailsFile));
+            VersionDetails? details = JsonSerializer.Deserialize<VersionDetails>(
+                await File.ReadAllBytesAsync(detailsFile),
+                ConsoleCommandUtils.JsonOptions);
 
             if (details is null) {
                 continue;
@@ -46,12 +51,14 @@ public static class VersionUtils {
         return null;
     }
 
-    public static bool IsInstalled(Settings settings, string version) {
-        return Directory.Exists(Path.Combine(settings.InstallDirectory, version));
+    public static bool IsInstalled(Settings settings, string version, Platform platform) {
+        string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(settings.InstallDirectory);
+        return Directory.Exists(Path.Combine(root, platform.ToString(), version));
     }
 
-    public static bool Uninstall(Settings settings, string version) {
-        string path = Path.Combine(settings.InstallDirectory, version);
+    public static bool Uninstall(Settings settings, string version, Platform platform) {
+        string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(settings.InstallDirectory);
+        string path = Path.Combine(root, platform.ToString(), version);
 
         if (!Directory.Exists(path)) {
             ConsoleCommandUtils.WriteLineError($"Version `{version}` is not installed.");

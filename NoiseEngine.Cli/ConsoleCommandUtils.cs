@@ -3,11 +3,16 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace NoiseEngine.Cli;
 
 public static class ConsoleCommandUtils {
+
+    public static JsonSerializerOptions JsonOptions { get; } = new JsonSerializerOptions {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public static string ExeName { get; } = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
 
@@ -92,11 +97,18 @@ public static class ConsoleCommandUtils {
              }
 
              return path;
-         } catch (Exception e) {
-             WriteLineError("Could not download file.");
-             Console.WriteLine();
-             Console.WriteLine(e);
+         } catch (Exception) {
+             WriteLineWarning($"Could not download file from `{uri}`.");
              return null;
          }
      }
+
+     public static string MakeRootedWithExeAsBase(string path) {
+         if (Path.IsPathRooted(path)) {
+             return path;
+         }
+
+         return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+     }
+
 }
