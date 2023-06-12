@@ -11,6 +11,7 @@ Settings settings = GetSettings();
 
 List<IConsoleCommand> commands = new List<IConsoleCommand> {
     new InstallConsoleCommand(settings),
+    new UninstallConsoleCommand(settings),
     new PlatformsConsoleCommand(),
     new VersionsConsoleCommand(settings)
 };

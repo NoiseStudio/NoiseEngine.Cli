@@ -61,20 +61,20 @@ public static class VersionUtils {
         string path = Path.Combine(root, platform.ToString(), version);
 
         if (!Directory.Exists(path)) {
-            ConsoleCommandUtils.WriteLineError($"Version `{version}` is not installed.");
+            ConsoleCommandUtils.WriteLineError($"Version `{version}` ({platform}) is not installed.");
             return false;
         }
 
-        Console.WriteLine($"Uninstalling version `{version}`...");
+        Console.WriteLine($"Uninstalling version `{version}` ({platform})...");
 
         try {
             Directory.Delete(path, true);
         } catch (Exception e) {
-            ConsoleCommandUtils.WriteLineError($"Could not uninstall version `{version}`: {e.Message}");
+            ConsoleCommandUtils.WriteLineError($"Could not uninstall version `{version}` ({platform}): {e.Message}");
             return false;
         }
 
-        Console.WriteLine($"Uninstalled version `{version}`.");
+        Console.WriteLine($"Uninstalled version `{version}` ({platform}).");
         return true;
     }
 

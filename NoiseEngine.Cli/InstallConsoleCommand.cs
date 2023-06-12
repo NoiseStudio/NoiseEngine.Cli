@@ -84,7 +84,7 @@ public class InstallConsoleCommand : IConsoleCommand {
             } else if (OperatingSystem.IsLinux()) {
                 platform = Platform.LinuxAmd64;
             } else {
-                ConsoleCommandUtils.WriteLineError("Could not determine OS. Try using --platform option.");
+                ConsoleCommandUtils.WriteLineError("Could not determine OS. Try using `--platform` option.");
                 return false;
             }
         }
