@@ -5,15 +5,15 @@ namespace NoiseEngine.Cli.Commands;
 
 public interface IConsoleCommand {
 
-    string Name { get; }
-    string[] Aliases { get; }
-    string Description { get; }
-    string Usage { get; }
-    ConsoleCommandOption[] Options { get; }
-    string? LongDescription { get; }
+    public string Name { get; }
+    public string[] Aliases { get; }
+    public string Description { get; }
+    public string Usage { get; }
+    public ConsoleCommandOption[] Options { get; }
+    public string? LongDescription { get; }
 
-    string NameAliasList => string.Join(", ", new[] { Name }.Concat(Aliases));
+    public string NameAliasList => string.Join(", ", new[] { Name }.Concat(Aliases));
 
-    bool Execute(ReadOnlySpan<string> args);
+    public bool Execute(ReadOnlySpan<string> args);
 
 }

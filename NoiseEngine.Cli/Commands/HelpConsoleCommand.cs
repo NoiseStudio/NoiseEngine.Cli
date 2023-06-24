@@ -8,16 +8,16 @@ public class HelpConsoleCommand : IConsoleCommand {
 
     private readonly IEnumerable<IConsoleCommand> consoleCommands;
 
-    public HelpConsoleCommand(IEnumerable<IConsoleCommand> consoleCommands) {
-        this.consoleCommands = consoleCommands;
-    }
-
     public string Name => "help";
     public string[] Aliases { get; } = Array.Empty<string>();
     public string Description => "Displays help information about the console commands.";
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} [COMMAND]";
     public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
     public string? LongDescription => null;
+
+    public HelpConsoleCommand(IEnumerable<IConsoleCommand> consoleCommands) {
+        this.consoleCommands = consoleCommands;
+    }
 
     public bool Execute(ReadOnlySpan<string> args) {
         switch (args.Length) {

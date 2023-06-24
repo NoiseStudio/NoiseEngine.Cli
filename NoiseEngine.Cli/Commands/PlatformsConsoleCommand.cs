@@ -10,6 +10,7 @@ public class PlatformsConsoleCommand : IConsoleCommand {
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name}";
     public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
     public string? LongDescription => null;
+
     public bool Execute(ReadOnlySpan<string> args) {
         if (args.Length > 0) {
             ConsoleCommandUtils.WriteLineError("Too many arguments.");
