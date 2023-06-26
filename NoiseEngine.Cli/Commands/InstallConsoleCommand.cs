@@ -139,12 +139,12 @@ public class InstallConsoleCommand : IConsoleCommand {
 
         Console.WriteLine($"Installing version `{vi.Version}`...");
 
-        string? universal = await TryDownloadMultiple(
+        string? shared = await TryDownloadMultiple(
             details.SharedUrls.Select(x => new Uri(x)),
             Convert.FromHexString(details.SharedSha256));
 
 
-        if (universal is null) {
+        if (shared is null) {
             ConsoleCommandUtils.WriteLineError($"Failed to download version `{vi.Version}`.");
             return false;
         }
@@ -175,10 +175,10 @@ public class InstallConsoleCommand : IConsoleCommand {
 
         Directory.CreateDirectory(installDir);
 
-        ZipFile.ExtractToDirectory(universal, installDir);
+        ZipFile.ExtractToDirectory(shared, installDir);
         ZipFile.ExtractToDirectory(extension, installDir);
 
-        File.Delete(universal);
+        File.Delete(shared);
         File.Delete(extension);
 
         Console.WriteLine($"Installed version `{vi.Version}`.");
