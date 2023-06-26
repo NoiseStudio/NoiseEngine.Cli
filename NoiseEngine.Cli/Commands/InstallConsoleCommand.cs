@@ -16,7 +16,7 @@ public class InstallConsoleCommand : IConsoleCommand {
     public string Name => "install";
     public string[] Aliases => Array.Empty<string>();
     public string Description => "Installs NoiseEngine versions.";
-    public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} <VERSION> [OPTIONS]";
+    public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} <VERSION|latest|latest-pre> [OPTIONS]";
 
     public ConsoleCommandOption[] Options { get; } = {
         new ConsoleCommandOption(
@@ -28,6 +28,7 @@ public class InstallConsoleCommand : IConsoleCommand {
     };
 
     public string LongDescription =>
+        "Version `latest` installs latest stable version and version `latest-pre` installs latest version even if it's not stable.\n" +
         $"Use `{ConsoleCommandUtils.ExeName} versions list` to list installed versions " +
         $"and `{ConsoleCommandUtils.ExeName} versions available` to list available versions.";
 
@@ -100,7 +101,21 @@ public class InstallConsoleCommand : IConsoleCommand {
             return false;
         }
 
-        VersionInfo? vi = index.Versions.FirstOrDefault(x => x.Version == version);
+        VersionInfo? vi;
+
+        switch (version) {
+            case "latest":
+                vi = index.Versions.FirstOrDefault(x => !x.PreRelease);
+                version = vi?.Version ?? version;
+                break;
+            case "latest-pre":
+                vi = index.Versions.FirstOrDefault();
+                version = vi?.Version ?? version;
+                break;
+            default:
+                vi = index.Versions.FirstOrDefault(x => x.Version == version);
+                break;
+        }
 
         if (vi is null) {
             ConsoleCommandUtils.WriteLineError($"Version `{version}` not found.");

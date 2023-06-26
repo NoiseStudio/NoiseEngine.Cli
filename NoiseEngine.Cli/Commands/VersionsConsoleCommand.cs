@@ -106,6 +106,8 @@ public class VersionsConsoleCommand : IConsoleCommand {
         }
 
         Console.WriteLine("Available versions:");
+        bool latest = true;
+        bool latestPreRelease = true;
 
         foreach (VersionInfo version in index.Versions) {
             IEnumerable<Platform> installed = Enum.GetValuesAsUnderlyingType<Platform>()
@@ -118,8 +120,30 @@ public class VersionsConsoleCommand : IConsoleCommand {
                 installedString = $" (installed for {installedString})";
             }
 
+            string releaseString;
+
+            if (version.PreRelease) {
+                if (latestPreRelease) {
+                    releaseString = " (latest pre-release)";
+                } else {
+                    releaseString = " (pre-release)";
+                }
+            } else {
+                if (latest) {
+                    releaseString = " (latest)";
+                } else {
+                    releaseString = "";
+                }
+            }
+
             Console.WriteLine(ConsoleCommandUtils.Indent(
-                version.Version + (version.PreRelease ? $" (pre-release){installedString}" : $"{installedString}")));
+                version.Version + releaseString + installedString));
+
+            if (!version.PreRelease) {
+                latest = false;
+            }
+
+            latestPreRelease = false;
         }
 
         return true;
