@@ -1,20 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using NoiseEngine.Cli;
 using NoiseEngine.Cli.Commands;
+using NoiseEngine.Cli.Versions;
 
 string exeName = ConsoleCommandUtils.ExeName;
 
-Settings settings = GetSettings();
+Settings.Instance = GetSettings();
 
 List<IConsoleCommand> commands = new List<IConsoleCommand> {
-    new InstallConsoleCommand(settings),
-    new UninstallConsoleCommand(settings),
+    new InstallConsoleCommand(),
+    new UninstallConsoleCommand(),
     new PlatformsConsoleCommand(),
-    new VersionsConsoleCommand(settings)
+    new VersionsConsoleCommand(),
+    new NewConsoleCommand()
 };
 
 // Help being in the collection passed as an argument to the constructor is intentional.
@@ -25,6 +28,7 @@ if (args.Length == 0) {
     Console.WriteLine();
     Console.WriteLine($"Usage: `{exeName} <COMMAND>`");
     Console.WriteLine($"Use `{exeName} help` for a list of commands.");
+    CheckCache();
     return -1;
 }
 
@@ -35,24 +39,54 @@ IConsoleCommand? command = commands.FirstOrDefault(c => c.Name == commandName ||
 if (command == null) {
     ConsoleCommandUtils.WriteLineError($"Command `{commandName}` not found.");
     Console.WriteLine($"Use `{exeName} help` for a list of commands.");
+    CheckCache();
     return -1;
 }
 
 if (!command.Execute(args.AsSpan()[1..])) {
+    CheckCache();
     return -1;
 }
+
+CheckCache();
 
 return 0;
 
 Settings GetSettings() {
-    if (!File.Exists("./settings.json")) {
+    string settingsPath = ConsoleCommandUtils.MakeRootedWithExeAsBase("settings.json");
+    if (!File.Exists(settingsPath)) {
         ConsoleCommandUtils.WriteLineWarning("Settings file not found; using default settings.");
-        JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
-        File.WriteAllBytes("./settings.json", JsonSerializer.SerializeToUtf8Bytes(new Settings(), options));
+        File.WriteAllBytes(
+            settingsPath,
+            JsonSerializer.SerializeToUtf8Bytes(new Settings(), ConsoleCommandUtils.JsonOptions));
     }
 
     Settings? result = JsonSerializer.Deserialize<Settings>(
-        File.ReadAllBytes("./settings.json"),
+        File.ReadAllText(settingsPath),
         ConsoleCommandUtils.JsonOptions);
     return result ?? throw new Exception("Could not deserialize settings.");
+}
+
+void CheckCache() {
+    if (!Settings.Instance.AutoDownloadIndex) {
+        return;
+    }
+
+    bool shouldUpdate = true;
+
+    if (File.Exists(VersionUtils.IndexCacheFilePath)) {
+        if (DateTime.UtcNow - File.GetLastWriteTimeUtc(VersionUtils.IndexCacheFilePath) < Settings.Instance.AutoDownloadIndexInterval) {
+            shouldUpdate = false;
+        }
+    }
+
+    if (shouldUpdate) {
+        new Process {
+            StartInfo = new ProcessStartInfo(
+                ConsoleCommandUtils.MakeRootedWithExeAsBase(ConsoleCommandUtils.ExeName),
+                "versions available") {
+                RedirectStandardOutput = true
+            }
+        }.Start();
+    }
 }

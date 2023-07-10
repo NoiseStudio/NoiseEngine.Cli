@@ -11,7 +11,8 @@ namespace NoiseEngine.Cli;
 public static class ConsoleCommandUtils {
 
     public static JsonSerializerOptions JsonOptions { get; } = new JsonSerializerOptions {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
     };
 
     public static string ExeName { get; } = System.Diagnostics.Process.GetCurrentProcess().ProcessName;

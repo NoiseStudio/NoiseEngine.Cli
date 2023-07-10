@@ -32,8 +32,8 @@ public class InstallConsoleCommand : IConsoleCommand {
         $"Use `{ConsoleCommandUtils.ExeName} versions list` to list installed versions " +
         $"and `{ConsoleCommandUtils.ExeName} versions available` to list available versions.";
 
-    public InstallConsoleCommand(Settings settings) {
-        this.settings = settings;
+    public InstallConsoleCommand() {
+        settings = Settings.Instance;
     }
 
     public bool Execute(ReadOnlySpan<string> args) {
@@ -95,9 +95,10 @@ public class InstallConsoleCommand : IConsoleCommand {
 
 
     private async Task<bool> InstallVersion(string version, bool force, Platform platform) {
-        VersionIndex? index = await VersionUtils.DownloadIndex(settings);
+        VersionIndex? index = await VersionUtils.GetIndex();
 
         if (index is null) {
+            Console.WriteLine("Could not download version index.");
             return false;
         }
 
@@ -118,11 +119,13 @@ public class InstallConsoleCommand : IConsoleCommand {
         }
 
         if (vi is null) {
-            ConsoleCommandUtils.WriteLineError($"Version `{version}` not found.");
+            ConsoleCommandUtils.WriteLineError(
+                $"Version `{version}` not found. Try running `{ConsoleCommandUtils.ExeName} versions available` " +
+                $"to refresh index and see available versions.");
             return false;
         }
 
-        if (VersionUtils.IsInstalled(settings, vi.Version, platform)) {
+        if (VersionUtils.IsInstalled(vi.Version, platform)) {
             if (force) {
                 VersionUtils.Uninstall(settings, vi.Version, platform);
             } else {
@@ -131,7 +134,7 @@ public class InstallConsoleCommand : IConsoleCommand {
             }
         }
 
-        VersionDetails? details = await VersionUtils.DownloadDetails(settings, vi.Version);
+        VersionDetails? details = await VersionUtils.DownloadDetails(vi.Version);
 
         if (details is null) {
             return false;

@@ -26,8 +26,8 @@ public class VersionsConsoleCommand : IConsoleCommand {
         $"Use `{ConsoleCommandUtils.ExeName} versions available` to list available versions.\n" +
         $"Use `{ConsoleCommandUtils.ExeName} versions details <VERSION>` to list details about a version.";
 
-    public VersionsConsoleCommand(Settings settings) {
-        this.settings = settings;
+    public VersionsConsoleCommand() {
+        settings = Settings.Instance;
     }
 
     public bool Execute(ReadOnlySpan<string> args) {
@@ -99,7 +99,7 @@ public class VersionsConsoleCommand : IConsoleCommand {
     }
 
     private async Task<bool> AvailableVersions() {
-        VersionIndex? index = await VersionUtils.DownloadIndex(settings);
+        VersionIndex? index = await VersionUtils.DownloadIndex();
 
         if (index is null) {
             return false;
@@ -112,7 +112,7 @@ public class VersionsConsoleCommand : IConsoleCommand {
         foreach (VersionInfo version in index.Versions) {
             IEnumerable<Platform> installed = Enum.GetValuesAsUnderlyingType<Platform>()
                 .Cast<Platform>()
-                .Where(platform => VersionUtils.IsInstalled(settings, version.Version, platform));
+                .Where(platform => VersionUtils.IsInstalled(version.Version, platform));
 
             string installedString = string.Join(", ", installed.Select(x => x.ToString()));
 
@@ -150,7 +150,7 @@ public class VersionsConsoleCommand : IConsoleCommand {
     }
 
     private async Task<bool> ListVersionDetails(string version) {
-        VersionIndex? index = await VersionUtils.DownloadIndex(settings);
+        VersionIndex? index = await VersionUtils.GetIndex();
 
         if (index is null) {
             return false;
@@ -159,11 +159,13 @@ public class VersionsConsoleCommand : IConsoleCommand {
         VersionInfo? info = index.Versions.FirstOrDefault(v => v.Version == version);
 
         if (info is null) {
-            ConsoleCommandUtils.WriteLineError($"Version `{version}` not found.");
+            ConsoleCommandUtils.WriteLineError(
+                $"Version `{version}` not found. Try running `{ConsoleCommandUtils.ExeName} versions available` " +
+                $"to refresh index and see available versions.");
             return false;
         }
 
-        VersionDetails? details = await VersionUtils.DownloadDetails(settings, version);
+        VersionDetails? details = await VersionUtils.DownloadDetails(version);
 
         if (details is null) {
             return false;

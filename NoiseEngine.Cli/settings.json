@@ -1,4 +1,8 @@
 {
-    "installUrl": "http://127.0.0.1:8080/",
-    "installDirectory": "./versions"
+  "installUrls": [
+    "http://127.0.0.1:8080/"
+  ],
+  "installDirectory": "./versions",
+  "autoDownloadIndex": true,
+  "autoDownloadIndexInterval": "12:00:00"
 }

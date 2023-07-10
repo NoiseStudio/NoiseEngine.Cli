@@ -21,8 +21,8 @@ public class UninstallConsoleCommand : IConsoleCommand {
 
     public string LongDescription => $"Use `{ConsoleCommandUtils.ExeName} versions list` to list installed versions.";
 
-    public UninstallConsoleCommand(Settings settings) {
-        this.settings = settings;
+    public UninstallConsoleCommand() {
+        settings = Settings.Instance;
     }
 
     public bool Execute(ReadOnlySpan<string> args) {
