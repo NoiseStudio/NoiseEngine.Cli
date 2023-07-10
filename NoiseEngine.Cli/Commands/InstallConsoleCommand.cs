@@ -98,7 +98,7 @@ public class InstallConsoleCommand : IConsoleCommand {
         VersionIndex? index = await VersionUtils.GetIndex();
 
         if (index is null) {
-            Console.WriteLine("Could not download version index.");
+            ConsoleCommandUtils.WriteLineError("Could not download version index.");
             return false;
         }
 

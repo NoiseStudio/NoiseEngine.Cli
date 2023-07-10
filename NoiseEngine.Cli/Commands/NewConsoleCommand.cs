@@ -25,7 +25,7 @@ public class NewConsoleCommand : IConsoleCommand {
             "The platform to target. Defaults to the current platform."),
         new ConsoleCommandOption(
             new [] { "--version <VERSION>", "-v <VERSION>" },
-    "The version of NoiseEngine to use. Defaults to the latest version.")
+            "The version of NoiseEngine to use. Defaults to the latest version.")
     };
 
     public string LongDescription => $"Use `{ConsoleCommandUtils.ExeName} new list` for list of templates.";
@@ -105,12 +105,16 @@ public class NewConsoleCommand : IConsoleCommand {
 
             byte[] data = File.ReadAllBytes(file);
 
-            string dataText = Encoding.UTF8.GetString(data);
-            string replacedText = dataText.Replace("{{ProjectName}}", name);
-            replacedText = replacedText.Replace("{{Version}}", version);
+            try {
+                string dataText = Encoding.UTF8.GetString(data);
+                string replacedText = dataText.Replace("{{ProjectName}}", name);
+                replacedText = replacedText.Replace("{{Version}}", version);
 
-            if (dataText != replacedText) {
-                data = Encoding.UTF8.GetBytes(replacedText);
+                if (dataText != replacedText) {
+                    data = Encoding.UTF8.GetBytes(replacedText);
+                }
+            } catch (Exception) {
+                // Not a text file
             }
 
             File.WriteAllBytes(destination, data);
