@@ -117,6 +117,10 @@ public class NewConsoleCommand : IConsoleCommand {
                 continue;
             }
 
+            relativePath = relativePath
+                .Replace("{{ProjectName}}", name)
+                .Replace("{{Version}}", version);
+
             string destination = Path.Combine(fullPath, relativePath);
             string directory = Path.GetDirectoryName(destination)!;
 
