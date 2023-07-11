@@ -1,4 +1,5 @@
 ﻿using System;
+using NoiseEngine.Cli.Options;
 using NoiseEngine.Cli.Versions;
 
 namespace NoiseEngine.Cli.Commands;
@@ -12,9 +13,10 @@ public class UninstallConsoleCommand : IConsoleCommand {
     public string Description => "Uninstalls NoiseEngine versions.";
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} <VERSION> [OPTIONS]";
 
-    public ConsoleCommandOption[] Options { get; } = {
-        new ConsoleCommandOption(
-            new[] { "--platform <PLATFORM>" },
+    public CommandOption[] Options { get; } = {
+        new CommandOption(
+            new[] { "--platform", "-p" },
+            "PLATFORM",
             "The platform to uninstall the version from. " +
             "Not providing this option will uninstall the version from default platform.")
     };
@@ -36,7 +38,7 @@ public class UninstallConsoleCommand : IConsoleCommand {
         for (int i = 1; i < args.Length; i++) {
             string arg = args[i];
 
-            if (arg == "--platform") {
+            if (arg is "--platform" or "-p") {
                 if (platform is not null) {
                     ConsoleCommandUtils.WriteInvalidUsage("Multiple --platform options.", Usage);
                     return false;

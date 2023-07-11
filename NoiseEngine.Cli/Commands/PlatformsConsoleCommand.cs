@@ -1,4 +1,5 @@
 ﻿using System;
+using NoiseEngine.Cli.Options;
 
 namespace NoiseEngine.Cli.Commands;
 
@@ -8,7 +9,7 @@ public class PlatformsConsoleCommand : IConsoleCommand {
     public string[] Aliases => Array.Empty<string>();
     public string Description => "Lists available platforms.";
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name}";
-    public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
+    public CommandOption[] Options => Array.Empty<CommandOption>();
     public string? LongDescription => null;
 
     public bool Execute(ReadOnlySpan<string> args) {

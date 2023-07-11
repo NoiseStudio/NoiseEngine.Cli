@@ -114,11 +114,48 @@ public static class VersionUtils {
         return true;
     }
 
-    public static string? LatestInstalled(Platform platform) {
-        string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
-        string[] versions = Directory.GetDirectories(Path.Combine(root, platform.ToString())).Order().ToArray();
+    public static async Task<string?> LatestInstalled(Platform platform) {
+        VersionIndex? index = await GetIndex();
 
-        return versions.Length == 0 ? null : Path.GetFileName(versions[^1]);
+        if (index is null) {
+            return null;
+        }
+
+        string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
+        string[] versions = Directory.GetDirectories(Path.Combine(root, platform.ToString()))
+            .Select(Path.GetFileName)
+            .Cast<string>()
+            .ToArray();
+
+        string? result = index.Versions.FirstOrDefault(x => !x.PreRelease && versions.Contains(x.Version))?.Version;
+
+        string? s = result;
+        if (s != null) {
+            Console.WriteLine("1");
+            return s;
+        }
+
+        return index.Versions.FirstOrDefault(x => versions.Contains(x.Version))?.Version;
+    }
+
+    public static async Task<string?> LatestAvailable() {
+        VersionIndex? index = await GetIndex();
+
+        return index?.Versions.FirstOrDefault(x => !x.PreRelease)?.Version;
+    }
+
+    public static bool CheckCacheShouldUpdate() {
+        if (!Settings.Instance.AutoDownloadIndex) {
+            return false;
+        }
+
+        if (!File.Exists(IndexCacheFilePath)) {
+            return true;
+        }
+
+        return
+            DateTime.UtcNow - File.GetLastWriteTimeUtc(IndexCacheFilePath) >
+            Settings.Instance.AutoDownloadIndexInterval;
     }
 
 }

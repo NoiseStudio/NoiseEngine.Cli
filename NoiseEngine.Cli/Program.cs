@@ -68,19 +68,7 @@ Settings GetSettings() {
 }
 
 void CheckCache() {
-    if (!Settings.Instance.AutoDownloadIndex) {
-        return;
-    }
-
-    bool shouldUpdate = true;
-
-    if (File.Exists(VersionUtils.IndexCacheFilePath)) {
-        if (DateTime.UtcNow - File.GetLastWriteTimeUtc(VersionUtils.IndexCacheFilePath) < Settings.Instance.AutoDownloadIndexInterval) {
-            shouldUpdate = false;
-        }
-    }
-
-    if (shouldUpdate) {
+    if (VersionUtils.CheckCacheShouldUpdate()) {
         new Process {
             StartInfo = new ProcessStartInfo(
                 ConsoleCommandUtils.MakeRootedWithExeAsBase(ConsoleCommandUtils.ExeName),

@@ -37,6 +37,24 @@ public static class ConsoleCommandUtils {
         Console.WriteLine($"Usage: `{usage}`");
     }
 
+    public static bool PromptYesNo(string message) {
+        while (true) {
+            Console.Write($"{message} [y/n]: ");
+            ConsoleKeyInfo key = Console.ReadKey();
+            Console.WriteLine();
+
+            switch (key.Key) {
+                case ConsoleKey.Y:
+                    return true;
+                case ConsoleKey.N:
+                    return false;
+                default:
+                    Console.WriteLine("Invalid input.");
+                    break;
+            }
+        }
+    }
+
     public static void UpdateProgressBar(double current, double total, int width = 20) {
         int progress = (int)Math.Round(current / total * width);
         Console.Write($"\r[{new string('#', progress).PadRight(width)}]");

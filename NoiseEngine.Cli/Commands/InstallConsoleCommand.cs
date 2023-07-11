@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using NoiseEngine.Cli.Options;
 using NoiseEngine.Cli.Versions;
 
 namespace NoiseEngine.Cli.Commands;
@@ -18,12 +19,14 @@ public class InstallConsoleCommand : IConsoleCommand {
     public string Description => "Installs NoiseEngine versions.";
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} <VERSION|latest|latest-pre> [OPTIONS]";
 
-    public ConsoleCommandOption[] Options { get; } = {
-        new ConsoleCommandOption(
+    public CommandOption[] Options { get; } = {
+        new CommandOption(
             new string[] { "--force", "-f" },
+            null,
             "Forces the installation of the specified version, even if it is already installed."),
-        new ConsoleCommandOption(
-            new string[] { "--platform <PLATFORM>" },
+        new CommandOption(
+            new string[] { "--platform" },
+            "PLATFORM",
             $"Forces installer to download engine for specified platform. List with `{ConsoleCommandUtils.ExeName} platforms`.")
     };
 

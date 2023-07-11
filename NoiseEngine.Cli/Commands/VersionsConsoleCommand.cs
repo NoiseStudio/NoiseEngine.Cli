@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using NoiseEngine.Cli.Options;
 using NoiseEngine.Cli.Versions;
 
 namespace NoiseEngine.Cli.Commands;
@@ -19,7 +20,7 @@ public class VersionsConsoleCommand : IConsoleCommand {
         $"{ConsoleCommandUtils.ExeName} {Name} <list|available|l|a> | " +
         $"{ConsoleCommandUtils.ExeName} {Name} <details|d> <VERSION>";
 
-    public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
+    public CommandOption[] Options => Array.Empty<CommandOption>();
 
     public string LongDescription =>
         $"Use `{ConsoleCommandUtils.ExeName} versions list` to list installed versions.\n" +

@@ -1,12 +1,34 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using NoiseEngine.Cli.Options;
 using NoiseEngine.Cli.Versions;
 
 namespace NoiseEngine.Cli.Commands;
 
 public class NewConsoleCommand : IConsoleCommand {
+
+    private static CommandOption NameOption { get; } = new CommandOption(
+        new[] { "--name", "-n" },
+        "NAME",
+        "The name of the project. Defaults to the current directory name if it's empty, makes a new one if specified.");
+
+    private static CommandOption PlatformOption { get; } = new CommandOption(
+        new[] { "--platform", "-p" },
+        "PLATFORM",
+        "The platform to target. Defaults to the current platform.");
+
+    private static CommandOption VersionOption { get; } = new CommandOption(
+        new[] { "--version", "-v" },
+        "VERSION",
+        "The version of NoiseEngine to use. Defaults to the latest version.");
+
+    private static CommandOption NoUpdateOption { get; } = new CommandOption(
+        new[] { "--noupdate" },
+        null,
+        "Disables checking for new NoiseEngine versions.");
 
     public string Name => "new";
     public string[] Aliases => Array.Empty<string>();
@@ -16,16 +38,11 @@ public class NewConsoleCommand : IConsoleCommand {
     public string Usage =>
         $"{ConsoleCommandUtils.ExeName} {Name} <TEMPLATE|list> [OPTIONS]";
 
-    public ConsoleCommandOption[] Options => new[] {
-        new ConsoleCommandOption(
-            new[] { "--name <NAME>", "-n <NAME>" },
-            "The name of the project. Defaults to the current directory name if it's empty, makes a new one if specified."),
-        new ConsoleCommandOption(
-            new[] { "--platform <PLATFORM>", "-p <PLATFORM>" },
-            "The platform to target. Defaults to the current platform."),
-        new ConsoleCommandOption(
-            new [] { "--version <VERSION>", "-v <VERSION>" },
-            "The version of NoiseEngine to use. Defaults to the latest version.")
+    public CommandOption[] Options => new[] {
+        NameOption,
+        PlatformOption,
+        VersionOption,
+        NoUpdateOption
     };
 
     public string LongDescription => $"Use `{ConsoleCommandUtils.ExeName} new list` for list of templates.";
@@ -43,17 +60,19 @@ public class NewConsoleCommand : IConsoleCommand {
 
         Console.WriteLine($"Templates for {platform} {version}:");
 
+        List<(string lhs, string rhs)> pairs = new List<(string lhs, string rhs)>();
+
         foreach (string template in templates) {
             string descriptionPath = Path.Combine(template, "description.txt");
 
             if (File.Exists(descriptionPath)) {
-                Console.WriteLine(
-                    $"{Path.GetFileName(template)} - {File.ReadAllText(descriptionPath).Trim()}");
+                pairs.Add((Path.GetFileName(template), $" - {File.ReadAllText(descriptionPath).Trim()}"));
             } else {
-                Console.WriteLine(
-                    $"{Path.GetFileName(template)} - No description provided.");
+                pairs.Add((Path.GetFileName(template), " - No description provided."));
             }
         }
+
+        Console.WriteLine(ConsoleCommandUtils.Align(pairs.ToArray()));
 
         return true;
     }
@@ -131,86 +150,57 @@ public class NewConsoleCommand : IConsoleCommand {
 
         string template = args[0];
 
-        Platform? platform = null;
-        string? name = null;
-        string? version = null;
-
-        for (int i = 1; i < args.Length; i++) {
-            string arg = args[i];
-
-            if (arg is "--platform") {
-                if (platform is not null) {
-                    ConsoleCommandUtils.WriteInvalidUsage("Multiple --platform options.", Usage);
-                    return false;
-                }
-
-                if (args.Length <= i + 1) {
-                    ConsoleCommandUtils.WriteInvalidUsage("Trailing --platform option.", Usage);
-                    return false;
-                }
-
-                string platformString = args[i + 1];
-
-                if (!Enum.TryParse(platformString, out Platform platformNotNullable)) {
-                    ConsoleCommandUtils.WriteInvalidUsage(
-                        $"Invalid platform: `{platformString}. List with `{ConsoleCommandUtils.ExeName} platforms`.",
-                        Usage);
-                    return false;
-                }
-
-                platform = platformNotNullable;
-                i++;
-            } else if (arg is "--name" or "-n") {
-                if (name is not null) {
-                    ConsoleCommandUtils.WriteInvalidUsage($"Multiple {arg} options.", Usage);
-                    return false;
-                }
-
-                if (args.Length <= i + 1) {
-                    ConsoleCommandUtils.WriteInvalidUsage($"Trailing {arg} option.", Usage);
-                    return false;
-                }
-
-                name = args[i + 1];
-                i++;
-            } else if (arg is "--version" or "-v") {
-                if (version is not null) {
-                    ConsoleCommandUtils.WriteInvalidUsage($"Multiple {arg} options.", Usage);
-                    return false;
-                }
-
-                if (args.Length <= i + 1) {
-                    ConsoleCommandUtils.WriteInvalidUsage($"Trailing {arg} option.", Usage);
-                    return false;
-                }
-
-                version = args[i + 1];
-                i++;
-            } else {
-                ConsoleCommandUtils.WriteInvalidUsage($"Unknown option `{arg}`.", Usage);
-                return false;
-            }
+        if (
+            !OptionParsingUtils.TryGetPairs(
+                args.Length > 1 ? args[1..] : ReadOnlySpan<string>.Empty,
+                out CommandOptionValue[]? optionValues,
+                Options)
+        ) {
+            return false;
         }
+
+        Platform? platform = OptionParsingUtils.GetPlatformOrCurrent(optionValues, PlatformOption);
 
         if (platform is null) {
-            if (OperatingSystem.IsWindows()) {
-                platform = Platform.WindowsAmd64;
-            } else if (OperatingSystem.IsLinux()) {
-                platform = Platform.LinuxAmd64;
-            } else {
-                ConsoleCommandUtils.WriteLineError("Could not determine OS. Try using `--platform` option.");
-                return false;
+            return false;
+        }
+
+        string? version = OptionParsingUtils.GetVersionOrLatest(optionValues, platform.Value, VersionOption);
+
+        if (version is null) {
+            return false;
+        }
+
+        string? name = OptionParsingUtils.GetValue(optionValues, NameOption);
+
+        bool noUpdate = OptionParsingUtils.GetFlag(optionValues, NoUpdateOption);
+
+        if (template == "list") {
+            return ListTemplates(platform.Value, version);
+        }
+
+        if (VersionUtils.CheckCacheShouldUpdate()) {
+            _ = VersionUtils.DownloadIndex().Result;
+        }
+
+        string? latestVersion = VersionUtils.LatestAvailable().Result;
+
+        if (latestVersion is not null && version != latestVersion && !noUpdate) {
+            ConsoleCommandUtils.WriteLineWarning(
+                $"Version {version} is not the latest version. Latest version is {latestVersion}.");
+            bool response = ConsoleCommandUtils.PromptYesNo("Do you want to update?");
+
+            if (response) {
+                version = latestVersion;
+
+                if (!VersionUtils.IsInstalled(version, platform.Value) &&
+                    !new InstallConsoleCommand().Execute(new string[] { latestVersion, platform.ToString()! })) {
+                    return false;
+                }
             }
         }
 
-        version ??= VersionUtils.LatestInstalled(platform.Value);
-
-        if (template == "list") {
-            return ListTemplates(platform.Value, version!);
-        }
-
-
-        return CreateProject(template, name, platform.Value, version!);
+        return CreateProject(template, name, platform.Value, version);
     }
 
 }
