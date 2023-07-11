@@ -8,9 +8,6 @@ namespace NoiseEngine.Cli.Options;
 
 public static class OptionParsingUtils {
 
-    public static (string[] set, bool hasTrail) PlatformOption { get; } = (new[] { "--platform", "-p" }, true);
-    public static (string[] set, bool hasTrail) VersionOption { get; } = (new[] { "--version", "-v" }, true);
-
     public static bool TryGetPairs(
         ReadOnlySpan<string> args,
         [NotNullWhen(true)] out CommandOptionValue[]? values,

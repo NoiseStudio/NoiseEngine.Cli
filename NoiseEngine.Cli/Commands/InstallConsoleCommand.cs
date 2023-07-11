@@ -14,20 +14,24 @@ public class InstallConsoleCommand : IConsoleCommand {
 
     private readonly Settings settings;
 
+    private static CommandOption ForceOption { get; } = new CommandOption(
+        new string[] { "--force", "-f" },
+        null,
+        "Forces the installation of the specified version, even if it is already installed.");
+
+    private static CommandOption PlatformOption { get; } = new CommandOption(
+        new string[] { "--platform" },
+        "PLATFORM",
+        $"Forces installer to download engine for specified platform. List with `{ConsoleCommandUtils.ExeName} platforms`.");
+
     public string Name => "install";
     public string[] Aliases => Array.Empty<string>();
     public string Description => "Installs NoiseEngine versions.";
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} <VERSION|latest|latest-pre> [OPTIONS]";
 
     public CommandOption[] Options { get; } = {
-        new CommandOption(
-            new string[] { "--force", "-f" },
-            null,
-            "Forces the installation of the specified version, even if it is already installed."),
-        new CommandOption(
-            new string[] { "--platform" },
-            "PLATFORM",
-            $"Forces installer to download engine for specified platform. List with `{ConsoleCommandUtils.ExeName} platforms`.")
+        ForceOption,
+        PlatformOption
     };
 
     public string LongDescription =>
@@ -45,53 +49,22 @@ public class InstallConsoleCommand : IConsoleCommand {
             return false;
         }
 
-        bool force = false;
-        Platform? platform = null;
-
-        for (int i = 1; i < args.Length; i++) {
-            string arg = args[i];
-
-            if (arg is "--force" or "-f") {
-                if (force) {
-                    ConsoleCommandUtils.WriteInvalidUsage("Multiple --force options.", Usage);
-                    return false;
-                }
-
-                force = true;
-            } else if (arg == "--platform") {
-                if (platform is not null) {
-                    ConsoleCommandUtils.WriteInvalidUsage("Multiple --platform options.", Usage);
-                    return false;
-                }
-
-                if (args.Length <= i + 1) {
-                    ConsoleCommandUtils.WriteInvalidUsage("Trailing --platform option.", Usage);
-                    return false;
-                }
-
-                string platformString = args[i + 1];
-
-                if (!Enum.TryParse(platformString, out Platform platformNotNullable)) {
-                    ConsoleCommandUtils.WriteInvalidUsage(
-                        $"Invalid platform: `{platformString}. List with `{ConsoleCommandUtils.ExeName} platforms`.",
-                        Usage);
-                    return false;
-                }
-
-                platform = platformNotNullable;
-            }
+        if (
+            !OptionParsingUtils.TryGetPairs(
+                args.Length > 1 ? args[1..] : ReadOnlySpan<string>.Empty,
+                out CommandOptionValue[]? optionValues,
+                Options)
+        ) {
+            return false;
         }
+
+        Platform? platform = OptionParsingUtils.GetPlatformOrCurrent(optionValues, PlatformOption);
 
         if (platform is null) {
-            if (OperatingSystem.IsWindows()) {
-                platform = Platform.WindowsAmd64;
-            } else if (OperatingSystem.IsLinux()) {
-                platform = Platform.LinuxAmd64;
-            } else {
-                ConsoleCommandUtils.WriteLineError("Could not determine OS. Try using `--platform` option.");
-                return false;
-            }
+            return false;
         }
+
+        bool force = OptionParsingUtils.GetFlag(optionValues, ForceOption);
 
         return InstallVersion(args[0], force, platform.Value).Result;
     }
