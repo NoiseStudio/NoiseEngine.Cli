@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NoiseEngine.Cli.Options;
 
 namespace NoiseEngine.Cli.Commands;
 
@@ -12,7 +13,7 @@ public class HelpConsoleCommand : IConsoleCommand {
     public string[] Aliases { get; } = Array.Empty<string>();
     public string Description => "Displays help information about the console commands.";
     public string Usage => $"{ConsoleCommandUtils.ExeName} {Name} [COMMAND]";
-    public ConsoleCommandOption[] Options => Array.Empty<ConsoleCommandOption>();
+    public CommandOption[] Options => Array.Empty<CommandOption>();
     public string? LongDescription => null;
 
     public HelpConsoleCommand(IEnumerable<IConsoleCommand> consoleCommands) {
@@ -51,7 +52,13 @@ public class HelpConsoleCommand : IConsoleCommand {
                 Console.WriteLine("Options:");
 
                 (string, string)[] optionDescriptionPairs = command.Options
-                    .Select(o => (string.Join(", ", o.Names), " - " + o.Description))
+                    .Select(
+                        o => (
+                            string.Join(
+                                ", ",
+                                o.Variants.Select(v => o.Trail is null ? v : $"{v} <{o.Trail}>")
+                            ),
+                            " - " + o.Description))
                     .ToArray();
 
                 Console.WriteLine(ConsoleCommandUtils.Indent(ConsoleCommandUtils.Align(optionDescriptionPairs)));

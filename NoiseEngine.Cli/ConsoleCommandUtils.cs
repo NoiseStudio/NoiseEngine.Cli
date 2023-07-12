@@ -11,7 +11,8 @@ namespace NoiseEngine.Cli;
 public static class ConsoleCommandUtils {
 
     public static JsonSerializerOptions JsonOptions { get; } = new JsonSerializerOptions {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
     };
 
     public static string ExeName { get; } = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
@@ -34,6 +35,24 @@ public static class ConsoleCommandUtils {
         WriteLineError(message);
         Console.WriteLine();
         Console.WriteLine($"Usage: `{usage}`");
+    }
+
+    public static bool PromptYesNo(string message) {
+        while (true) {
+            Console.Write($"{message} [y/n]: ");
+            ConsoleKeyInfo key = Console.ReadKey();
+            Console.WriteLine();
+
+            switch (key.Key) {
+                case ConsoleKey.Y:
+                    return true;
+                case ConsoleKey.N:
+                    return false;
+                default:
+                    Console.WriteLine("Invalid input.");
+                    break;
+            }
+        }
     }
 
     public static void UpdateProgressBar(double current, double total, int width = 20) {
