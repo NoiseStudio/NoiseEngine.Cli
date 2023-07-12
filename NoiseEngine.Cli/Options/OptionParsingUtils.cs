@@ -8,6 +8,31 @@ namespace NoiseEngine.Cli.Options;
 
 public static class OptionParsingUtils {
 
+    private static bool ValidateOption(
+        IEnumerable<CommandOptionValue> result,
+        IEnumerable<CommandOption> allowedOptions,
+        string option,
+        [NotNullWhen(true)] out CommandOption? realOption
+    ) {
+        foreach (CommandOption co in allowedOptions) {
+            if (!co.Variants.Contains(option)) {
+                continue;
+            }
+
+            if (result.All(cov => co != cov.Option)) {
+                realOption = co;
+                return true;
+            }
+
+            ConsoleCommandUtils.WriteLineError($"Duplicate option: {option}");
+            realOption = null;
+            return false;
+        }
+
+        realOption = null;
+        return false;
+    }
+
     public static bool TryGetPairs(
         ReadOnlySpan<string> args,
         [NotNullWhen(true)] out CommandOptionValue[]? values,
@@ -17,7 +42,7 @@ public static class OptionParsingUtils {
         values = null;
 
         for (int i = 0; i < args.Length; i++) {
-            if (!ValidateOption(args[i], out CommandOption? co)) {
+            if (!ValidateOption(result, allowedOptions, args[i], out CommandOption? co)) {
                 ConsoleCommandUtils.WriteLineError($"Invalid or duplicate option: {args[i]}");
                 return false;
             }
@@ -43,27 +68,6 @@ public static class OptionParsingUtils {
 
         values = result.ToArray();
         return true;
-
-        bool ValidateOption(string option, [NotNullWhen(true)] out CommandOption? realOption) {
-            foreach (CommandOption co in allowedOptions) {
-                if (!co.Variants.Contains(option)) {
-                    continue;
-                }
-
-                if (result.All(cov => co != cov.Option)) {
-                    realOption = co;
-                    return true;
-                }
-
-                ConsoleCommandUtils.WriteLineError($"Duplicate option: {option}");
-                realOption = null;
-                return false;
-            }
-
-            realOption = null;
-            return false;
-        }
-
     }
 
     public static bool GetFlag(IEnumerable<CommandOptionValue> values, CommandOption option) {

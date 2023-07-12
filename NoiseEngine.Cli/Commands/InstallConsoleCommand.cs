@@ -22,7 +22,8 @@ public class InstallConsoleCommand : IConsoleCommand {
     private static CommandOption PlatformOption { get; } = new CommandOption(
         new string[] { "--platform" },
         "PLATFORM",
-        $"Forces installer to download engine for specified platform. List with `{ConsoleCommandUtils.ExeName} platforms`.");
+        "Forces installer to download NoiseEngine version for specified platform. " +
+        $"List with `{ConsoleCommandUtils.ExeName} platforms`.");
 
     public string Name => "install";
     public string[] Aliases => Array.Empty<string>();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using NoiseEngine.Cli.Options;
 using NoiseEngine.Cli.Versions;
 
@@ -110,11 +111,11 @@ public class NewConsoleCommand : IConsoleCommand {
 
         string[] files = Directory.GetFiles(root, "*", SearchOption.AllDirectories);
 
-        foreach (string file in files) {
+        Parallel.ForEach(files, file => {
             string relativePath = Path.GetRelativePath(root, file);
 
             if (relativePath == "description.txt") {
-                continue;
+                return;
             }
 
             relativePath = relativePath
@@ -141,7 +142,7 @@ public class NewConsoleCommand : IConsoleCommand {
             }
 
             File.WriteAllBytes(destination, data);
-        }
+        });
 
         return true;
     }
