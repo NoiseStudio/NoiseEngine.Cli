@@ -8,31 +8,6 @@ namespace NoiseEngine.Cli.Options;
 
 public static class OptionParsingUtils {
 
-    private static bool ValidateOption(
-        IEnumerable<CommandOptionValue> result,
-        IEnumerable<CommandOption> allowedOptions,
-        string option,
-        [NotNullWhen(true)] out CommandOption? realOption
-    ) {
-        foreach (CommandOption co in allowedOptions) {
-            if (!co.Variants.Contains(option)) {
-                continue;
-            }
-
-            if (result.All(cov => co != cov.Option)) {
-                realOption = co;
-                return true;
-            }
-
-            ConsoleCommandUtils.WriteLineError($"Duplicate option: {option}");
-            realOption = null;
-            return false;
-        }
-
-        realOption = null;
-        return false;
-    }
-
     public static bool TryGetPairs(
         ReadOnlySpan<string> args,
         [NotNullWhen(true)] out CommandOptionValue[]? values,
@@ -145,6 +120,31 @@ public static class OptionParsingUtils {
         }
 
         return version;
+    }
+
+    private static bool ValidateOption(
+        IEnumerable<CommandOptionValue> result,
+        IEnumerable<CommandOption> allowedOptions,
+        string option,
+        [NotNullWhen(true)] out CommandOption? realOption
+    ) {
+        foreach (CommandOption co in allowedOptions) {
+            if (!co.Variants.Contains(option)) {
+                continue;
+            }
+
+            if (result.All(cov => co != cov.Option)) {
+                realOption = co;
+                return true;
+            }
+
+            ConsoleCommandUtils.WriteLineError($"Duplicate option: {option}");
+            realOption = null;
+            return false;
+        }
+
+        realOption = null;
+        return false;
     }
 
 }
