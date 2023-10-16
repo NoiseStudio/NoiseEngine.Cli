@@ -19,7 +19,7 @@ Even in future when editor will be avaiable this tools will allow to use NoiseEn
 Documentation how to use this tool is not currently avaiable. See [here](https://github.com/NoiseStudio/NoiseEngine#documentation) for more information.
 
 ### Versioning
-This project has other versioning than core, version 0.2 of this are not 0.2 of core.
+This project has independent versioning than core, version 0.2 of this are not 0.2 of core.
 
 ## Building
 To compile this project you need to have [.NET 7.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/7.0).
