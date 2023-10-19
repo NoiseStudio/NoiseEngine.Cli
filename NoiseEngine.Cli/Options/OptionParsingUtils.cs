@@ -103,7 +103,6 @@ public static class OptionParsingUtils {
 
     public static string? GetVersionOrLatest(
         IEnumerable<CommandOptionValue> values,
-        Platform platform,
         CommandOption option
     ) {
         foreach ((CommandOption co, string? value) in values) {
@@ -112,11 +111,11 @@ public static class OptionParsingUtils {
             }
         }
 
-        string? version = VersionUtils.LatestInstalled(platform).Result;
+        string? version = VersionUtils.LatestInstalled().Result;
 
         if (version is null) {
             ConsoleCommandUtils.WriteLineError(
-                $"Could not determine latest installed version for platform {platform}.");
+                $"Could not determine latest installed version.");
         }
 
         return version;

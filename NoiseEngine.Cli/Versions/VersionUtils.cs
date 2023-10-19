@@ -53,6 +53,9 @@ public static class VersionUtils {
                 continue;
             }
 
+            if (!Directory.Exists(Path.GetDirectoryName(IndexCacheFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(IndexCacheFilePath)!);
+
             await File.WriteAllBytesAsync(
                 IndexCacheFilePath,
                 JsonSerializer.SerializeToUtf8Bytes(index, ConsoleCommandUtils.JsonOptions));
@@ -87,34 +90,39 @@ public static class VersionUtils {
         return null;
     }
 
-    public static bool IsInstalled(string version, Platform platform) {
+    public static bool IsInstalledShared(string version) {
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
-        return Directory.Exists(Path.Combine(root, platform.ToString(), version));
+        return Directory.Exists(Path.Combine(root, version));
     }
 
-    public static bool Uninstall(Settings settings, string version, Platform platform) {
+    public static bool IsInstalled(string version, Platform platform) {
+        string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
+        return Directory.Exists(Path.Combine(root, version, platform.ToString()));
+    }
+
+    public static bool Uninstall(Settings settings, string version) {
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(settings.InstallDirectory);
-        string path = Path.Combine(root, platform.ToString(), version);
+        string path = Path.Combine(root, version);
 
         if (!Directory.Exists(path)) {
-            ConsoleCommandUtils.WriteLineError($"Version `{version}` ({platform}) is not installed.");
+            ConsoleCommandUtils.WriteLineError($"Version `{version}` is not installed.");
             return false;
         }
 
-        Console.WriteLine($"Uninstalling version `{version}` ({platform})...");
+        Console.WriteLine($"Uninstalling version `{version}`...");
 
         try {
             Directory.Delete(path, true);
         } catch (Exception e) {
-            ConsoleCommandUtils.WriteLineError($"Could not uninstall version `{version}` ({platform}): {e.Message}");
+            ConsoleCommandUtils.WriteLineError($"Could not uninstall version `{version}`: {e.Message}");
             return false;
         }
 
-        Console.WriteLine($"Uninstalled version `{version}` ({platform}).");
+        Console.WriteLine($"Uninstalled version `{version}`.");
         return true;
     }
 
-    public static async Task<string?> LatestInstalled(Platform platform) {
+    public static async Task<string?> LatestInstalled() {
         VersionIndex? index = await GetIndex();
 
         if (index is null) {
@@ -122,7 +130,7 @@ public static class VersionUtils {
         }
 
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
-        string[] versions = Directory.GetDirectories(Path.Combine(root, platform.ToString()))
+        string[] versions = Directory.GetDirectories(root)
             .Select(Path.GetFileName)
             .Cast<string>()
             .ToArray();
@@ -131,7 +139,6 @@ public static class VersionUtils {
 
         string? s = result;
         if (s != null) {
-            Console.WriteLine("1");
             return s;
         }
 

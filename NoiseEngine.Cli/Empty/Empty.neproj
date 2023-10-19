@@ -1,0 +1,12 @@
+{
+    "projectName": "Empty",
+    "projectVersion": "v0.1.0",
+    "companyName": null,
+    "nullable": true,
+    "allowUnsafe": false,
+    "engineVersion": "v0.1.0-alpha2",
+    "features": {
+        "largeWorld": false
+    }
+}
+

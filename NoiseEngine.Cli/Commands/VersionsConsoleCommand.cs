@@ -78,22 +78,43 @@ public class VersionsConsoleCommand : IConsoleCommand {
     private bool ListVersions() {
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(settings.InstallDirectory);
 
-        foreach (object o in Enum.GetValuesAsUnderlyingType<Platform>()) {
-            Platform platform = (Platform)o;
-            string platformString = platform.ToString();
-            string[] versions = Directory.GetDirectories(Path.Combine(root, platformString));
+        if (!Directory.Exists(root)) {
+            Console.WriteLine("No versions are installed.");
+            return true;
+        }
 
-            if (versions.Length == 0) {
+        string[] versions = Directory.GetDirectories(root);
+
+        if (versions.Length == 0) {
+            Console.WriteLine("No versions are installed.");
+            return true;
+        }
+
+        Console.WriteLine("Installed versions:");
+
+        foreach (string version in versions) {
+            string versionRoot = Path.Combine(root, version);
+            string platformsString = string.Empty;
+
+            foreach (object? platform in Enum.GetValuesAsUnderlyingType<Platform>()) {
+                string platformString = ((Platform)platform).ToString();
+
+                if (!Directory.Exists(Path.Combine(versionRoot, platformString))) {
+                    continue;
+                }
+
+                if (platformsString == string.Empty) {
+                    platformsString = platformString;
+                } else {
+                    platformsString += ", " + platformString;
+                }
+            }
+
+            if (platformsString == string.Empty) {
                 continue;
             }
 
-            Console.WriteLine($"{platformString}:");
-
-            foreach (string version in versions) {
-                Console.WriteLine(ConsoleCommandUtils.Indent(Path.GetFileName(version)));
-            }
-
-            Console.WriteLine();
+            Console.WriteLine(ConsoleCommandUtils.Indent($"{Path.GetFileName(version)} (installed for {platformsString})"));
         }
 
         return true;
@@ -137,8 +158,9 @@ public class VersionsConsoleCommand : IConsoleCommand {
                 }
             }
 
-            Console.WriteLine(ConsoleCommandUtils.Indent(
-                version.Version + releaseString + installedString));
+            Console.WriteLine(
+                ConsoleCommandUtils.Indent(
+                    version.Version + releaseString + installedString));
 
             if (!version.PreRelease) {
                 latest = false;
@@ -174,6 +196,16 @@ public class VersionsConsoleCommand : IConsoleCommand {
 
         Console.WriteLine($"Version: {details.Version}");
         Console.WriteLine($"Pre-release: {details.PreRelease}");
+        Console.WriteLine("Platforms:");
+
+        if (details.ExtensionWindowsAmd64Urls.Length > 0) {
+            Console.WriteLine($" - {Platform.WindowsAmd64}");
+        }
+
+        if (details.ExtensionLinuxAmd64Urls.Length > 0) {
+            Console.WriteLine($" - {Platform.LinuxAmd64}");
+        }
+
         return true;
     }
 

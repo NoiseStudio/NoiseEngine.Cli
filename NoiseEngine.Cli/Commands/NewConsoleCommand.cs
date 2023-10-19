@@ -16,11 +16,6 @@ public class NewConsoleCommand : IConsoleCommand {
         "NAME",
         "The name of the project. Defaults to the current directory name if it's empty, makes a new one if specified.");
 
-    private static CommandOption PlatformOption { get; } = new CommandOption(
-        new[] { "--platform", "-p" },
-        "PLATFORM",
-        "The platform to target. Defaults to the current platform.");
-
     private static CommandOption VersionOption { get; } = new CommandOption(
         new[] { "--version", "-v" },
         "VERSION",
@@ -41,25 +36,24 @@ public class NewConsoleCommand : IConsoleCommand {
 
     public CommandOption[] Options => new[] {
         NameOption,
-        PlatformOption,
         VersionOption,
         NoUpdateOption
     };
 
     public string LongDescription => $"Use `{ConsoleCommandUtils.ExeName} new list` for list of templates.";
 
-    private static bool ListTemplates(Platform platform, string version) {
+    private static bool ListTemplates(string version) {
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
-        root = Path.Combine(root, platform.ToString(), version, "templates");
+        root = Path.Combine(root, version, "shared", "templates");
 
         if (!Directory.Exists(root)) {
-            ConsoleCommandUtils.WriteLineError($"No templates found for {platform} {version}.");
+            ConsoleCommandUtils.WriteLineError($"No templates found for {version}.");
             return false;
         }
 
         string[] templates = Directory.GetDirectories(root);
 
-        Console.WriteLine($"Templates for {platform} {version}:");
+        Console.WriteLine($"Templates for {version}:");
 
         List<(string lhs, string rhs)> pairs = new List<(string lhs, string rhs)>();
 
@@ -78,17 +72,17 @@ public class NewConsoleCommand : IConsoleCommand {
         return true;
     }
 
-    private static bool CreateProject(string template, string? name, Platform platform, string version) {
+    private static bool CreateProject(string template, string? name, string version) {
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(Settings.Instance.InstallDirectory);
-        root = Path.Combine(root, platform.ToString(), version, "templates", template);
+        root = Path.Combine(root, version, "shared", "templates", template);
 
-        if (!VersionUtils.IsInstalled(version, platform)) {
+        if (!VersionUtils.IsInstalledShared(version)) {
             ConsoleCommandUtils.WriteLineError($"Version {version} is not installed.");
             return false;
         }
 
         if (!Directory.Exists(root)) {
-            ConsoleCommandUtils.WriteLineError($"No template found for {platform} {version} named {template}.");
+            ConsoleCommandUtils.WriteLineError($"No template found for {version} named {template}.");
             return false;
         }
 
@@ -164,13 +158,7 @@ public class NewConsoleCommand : IConsoleCommand {
             return false;
         }
 
-        Platform? platform = OptionParsingUtils.GetPlatformOrCurrent(optionValues, PlatformOption);
-
-        if (platform is null) {
-            return false;
-        }
-
-        string? version = OptionParsingUtils.GetVersionOrLatest(optionValues, platform.Value, VersionOption);
+        string? version = OptionParsingUtils.GetVersionOrLatest(optionValues, VersionOption);
 
         if (version is null) {
             return false;
@@ -181,7 +169,7 @@ public class NewConsoleCommand : IConsoleCommand {
         bool noUpdate = OptionParsingUtils.GetFlag(optionValues, NoUpdateOption);
 
         if (template == "list") {
-            return ListTemplates(platform.Value, version);
+            return ListTemplates(version);
         }
 
         if (VersionUtils.CheckCacheShouldUpdate()) {
@@ -198,14 +186,14 @@ public class NewConsoleCommand : IConsoleCommand {
             if (response) {
                 version = latestVersion;
 
-                if (!VersionUtils.IsInstalled(version, platform.Value) &&
-                    !new InstallConsoleCommand().Execute(new string[] { latestVersion, platform.ToString()! })) {
+                if (!VersionUtils.IsInstalledShared(version) &&
+                    !new InstallConsoleCommand().Execute(new string[] { latestVersion })) {
                     return false;
                 }
             }
         }
 
-        return CreateProject(template, name, platform.Value, version);
+        return CreateProject(template, name, version);
     }
 
 }

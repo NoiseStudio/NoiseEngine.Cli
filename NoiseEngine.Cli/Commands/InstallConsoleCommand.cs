@@ -22,7 +22,7 @@ public class InstallConsoleCommand : IConsoleCommand {
     private static CommandOption PlatformOption { get; } = new CommandOption(
         new string[] { "--platform" },
         "PLATFORM",
-        "Forces installer to download NoiseEngine version for specified platform. " +
+        "Install support for the specified platform. " +
         $"List with `{ConsoleCommandUtils.ExeName} platforms`.");
 
     public string Name => "install";
@@ -67,12 +67,16 @@ public class InstallConsoleCommand : IConsoleCommand {
 
         bool force = OptionParsingUtils.GetFlag(optionValues, ForceOption);
 
-        return InstallVersion(args[0], force, platform.Value).Result;
+        return InstallVersion(
+            args[0],
+            force,
+            platform.Value
+        ).Result;
     }
 
 
     private async Task<bool> InstallVersion(string version, bool force, Platform platform) {
-        VersionIndex? index = await VersionUtils.GetIndex();
+        VersionIndex? index = await VersionUtils.DownloadIndex();
 
         if (index is null) {
             ConsoleCommandUtils.WriteLineError("Could not download version index.");
@@ -98,13 +102,13 @@ public class InstallConsoleCommand : IConsoleCommand {
         if (vi is null) {
             ConsoleCommandUtils.WriteLineError(
                 $"Version `{version}` not found. Try running `{ConsoleCommandUtils.ExeName} versions available` " +
-                $"to refresh index and see available versions.");
+                $"to see available versions.");
             return false;
         }
 
         if (VersionUtils.IsInstalled(vi.Version, platform)) {
             if (force) {
-                VersionUtils.Uninstall(settings, vi.Version, platform);
+                VersionUtils.Uninstall(settings, vi.Version);
             } else {
                 ConsoleCommandUtils.WriteLineError($"Version `{version}` is already installed.");
                 return false;
@@ -119,14 +123,16 @@ public class InstallConsoleCommand : IConsoleCommand {
 
         Console.WriteLine($"Installing version `{vi.Version}`...");
 
-        string? shared = await TryDownloadMultiple(
-            details.SharedUrls.Select(x => new Uri(x)),
-            Convert.FromHexString(details.SharedSha256));
+        string? shared = null;
+        if (!VersionUtils.IsInstalledShared(version)) {
+            shared = await TryDownloadMultiple(
+                details.SharedUrls.Select(x => new Uri(x)),
+                Convert.FromHexString(details.SharedSha256));
 
-
-        if (shared is null) {
-            ConsoleCommandUtils.WriteLineError($"Failed to download version `{vi.Version}`.");
-            return false;
+            if (shared is null) {
+                ConsoleCommandUtils.WriteLineError($"Failed to download version `{vi.Version}`.");
+                return false;
+            }
         }
 
         IEnumerable<Uri> extensionUris = platform switch {
@@ -151,14 +157,24 @@ public class InstallConsoleCommand : IConsoleCommand {
         }
 
         string root = ConsoleCommandUtils.MakeRootedWithExeAsBase(settings.InstallDirectory);
-        string installDir = Path.Combine(root, platform.ToString(), version);
+        string installDir = Path.Combine(root, version);
 
         Directory.CreateDirectory(installDir);
+        string innerInstallDir;
 
-        ZipFile.ExtractToDirectory(shared, installDir);
-        ZipFile.ExtractToDirectory(extension, installDir);
+        if (shared is not null) {
+            innerInstallDir = Path.Combine(installDir, "shared");
+            Directory.CreateDirectory(innerInstallDir);
+            ZipFile.ExtractToDirectory(shared, innerInstallDir);
+        }
 
-        File.Delete(shared);
+        innerInstallDir = Path.Combine(installDir, platform.ToString());
+        Directory.CreateDirectory(innerInstallDir);
+        ZipFile.ExtractToDirectory(extension, innerInstallDir);
+
+        if (shared is not null)
+            File.Delete(shared);
+
         File.Delete(extension);
 
         Console.WriteLine($"Installed version `{vi.Version}`.");
